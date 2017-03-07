@@ -1,0 +1,39 @@
+---
+- name: set logrotate
+  hosts: hos3
+  vars:
+    opflex_logrotate_file: |
+      /var/log/neutron/cisco-opflex-agent.log
+      {
+        daily
+        compress
+        missingok
+        notifempty
+        copytruncate
+        maxsize 100M
+        rotate 7
+        create 640 root root
+        su root root
+      }
+      /var/log/neutron/cisco-apic-host-agent.log
+      {
+        daily
+        compress
+        missingok
+        notifempty
+        copytruncate
+        maxsize 100M
+        rotate 7
+        create 640 neutron neutron
+        su neutron neutron
+      }
+  tasks:
+  - copy:
+      dest: /etc/logrotate.d/neutron-opflex
+      content: '{{ opflex_logrotate_file }}'
+    become: true
+    #ignore_errors: yes
+    
+  - command: logrotate -v /etc/logrotate.d/neutron-opflex
+    become: true
+    register: echo

@@ -1,0 +1,169 @@
+- name: install sysstat
+  hosts: hos3
+  vars:
+    sysstat_default_file: |
+      #
+      # Default settings for /etc/init.d/sysstat, /etc/cron.d/sysstat
+      # and /etc/cron.daily/sysstat files
+      #
+      # Should sadc collect system activity informations? Valid values
+      # are "true" and "false". Please do not put other values, they
+      # will be overwritten by debconf!
+      ENABLED="true"
+    sysstat_crond_file: |
+      # The first element of the path is a directory where the debian-sa1
+      # script is located
+      PATH=/usr/lib/sysstat:/usr/sbin:/usr/sbin:/usr/bin:/sbin:/bin
+      # Activity reports every 10 minutes everyday
+      */1 * * * * root command -v debian-sa1 > /dev/null && debian-sa1 1 1
+      # Additional run at 23:59 to rotate the statistics file
+      59 23 * * * root command -v debian-sa1 > /dev/null && debian-sa1 60 
+    sysstat_logrotate_file: |
+      /var/log/syslog
+      {
+        daily
+        rotate 7
+        maxsize 500M
+        missingok
+        notifempty
+        compress
+        postrotate
+          kill -HUP $(cat /var/run/rsyslogd.pid 2> /dev/null) &> /dev/null || true
+          kill -HUP $(cat /var/run/syslogd.pid 2> /dev/null) &> /dev/null || true
+        endscript
+        create 640 root adm
+        su root adm
+      }
+
+      /var/log/daemon.log
+      {
+        rotate 7
+        daily
+        maxsize 500M
+        missingok
+        notifempty
+        compress
+        postrotate
+          kill -HUP $(cat /var/run/rsyslogd.pid 2> /dev/null) &> /dev/null || true
+          kill -HUP $(cat /var/run/syslogd.pid 2> /dev/null) &> /dev/null || true
+        endscript
+        create 640 root adm
+        su root adm
+      }
+
+      /var/log/mail.info
+      /var/log/mail.warn
+      /var/log/mail.err
+      /var/log/mail.log
+      {
+        rotate 7
+        weekly
+        maxsize 10M
+        missingok
+        notifempty
+        compress
+        sharedscripts
+        postrotate
+          kill -HUP $(cat /var/run/rsyslogd.pid 2> /dev/null) &> /dev/null || true
+          kill -HUP $(cat /var/run/syslogd.pid 2> /dev/null) &> /dev/null || true
+        endscript
+        create 640 root adm
+        su root adm
+      }
+
+      /var/log/auth.log
+      /var/log/cron
+      /var/log/cron.log
+      /var/log/debug
+      /var/log/kern.log
+      /var/log/lpr.log
+      /var/log/maillog
+      /var/log/messages
+      /var/log/secure
+      /var/log/spooler
+      /var/log/user.log
+      {
+        rotate 7
+        weekly
+        maxsize 45M
+        missingok
+        notifempty
+        compress
+        sharedscripts
+        postrotate
+          kill -HUP $(cat /var/run/rsyslogd.pid 2> /dev/null) &> /dev/null || true
+          kill -HUP $(cat /var/run/syslogd.pid 2> /dev/null) &> /dev/null || true
+        endscript
+        create 640 root adm
+        su root adm
+      }
+
+      /var/log/apparmor/*
+      /var/log/install_package.log
+      /var/log/rsyncd.log
+      /var/log/setup_systemd.log
+      /var/log/mcelog
+      {
+        rotate 7
+        weekly
+        maxsize 45M
+        missingok
+        notifempty
+        compress
+        postrotate
+          kill -HUP $(cat /var/run/rsyslogd.pid 2> /dev/null) &> /dev/null || true
+          kill -HUP $(cat /var/run/syslogd.pid 2> /dev/null) &> /dev/null || true
+        endscript
+        create 644 root root
+        su root root
+      }
+
+      /var/log/ntpstats/*
+      {
+        rotate 7
+        weekly
+        maxsize 45M
+        missingok
+        notifempty
+        compress
+        postrotate
+          kill -HUP $(cat /var/run/rsyslogd.pid 2> /dev/null) &> /dev/null || true
+          kill -HUP $(cat /var/run/syslogd.pid 2> /dev/null) &> /dev/null || true
+        endscript
+        create 644 ntp ntp
+        su ntp ntp
+      }
+  tasks:
+    - name: unexpected os distribution
+      debug:
+        msg: os distribution {{ ansible_os_family }} is not support
+      when: not ansible_os_family == "Debian"
+
+    - name: apt
+      apt:
+        name: sysstat
+        state: present
+      become: true
+
+    - name: set up the sysstat
+      copy:
+        dest: /etc/default/sysstat
+        content: '{{ sysstat_default_file }}'
+      become: true
+
+    - name: set the crolling interval
+      copy:
+        dest: /etc/cron.d/sysstat
+        content: '{{ sysstat_crond_file }}'
+      become: true
+    
+    - name: set the rotate interval
+      copy:
+        dest: /etc/logrotate.d/rsyslog
+        content: '{{ sysstat_logrotate_file }}'
+      become: true
+
+    - name: clean up log
+      shell:  find /var/log/sysstat/ -mtime +3 -exec rm -f {} \;
+      become: true
+

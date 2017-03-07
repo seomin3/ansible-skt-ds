@@ -1,0 +1,7 @@
+---
+- hosts: vm
+  tasks:
+  - command: ip link set mtu 1600 dev "{{ item }}"
+    with_items:
+      - "{{ ansible_interfaces }}"
+    when: item != "lo"
