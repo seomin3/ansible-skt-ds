@@ -1,0 +1,5 @@
+---
+- hosts: MON-AGN
+  roles:
+    - patch-monasca-agent
+  become: yes

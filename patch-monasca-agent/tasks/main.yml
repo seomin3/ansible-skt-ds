@@ -1,0 +1,8 @@
+---
+- name: patch cpu.py
+  patch: 
+    src: monasca-agent.patch
+    dest: /opt/stack/venv/monasca_agent-20161109T181337Z/lib/python2.7/site-packages/monasca_agent/collector/checks_d/cpu.py
+
+- name: restart monasca-agent
+  service: name=monasca-agent state=restarted

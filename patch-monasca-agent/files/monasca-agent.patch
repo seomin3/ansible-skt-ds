@@ -1,0 +1,11 @@
+--- /opt/stack/venv/monasca_agent-20161109T181337Z/lib/python2.7/site-packages/monasca_agent/collector/checks_d/cpu.py.a	2017-07-19 05:23:51.068885008 +0000
++++ /opt/stack/venv/monasca_agent-20161109T181337Z/lib/python2.7/site-packages/monasca_agent/collector/checks_d/cpu.py	2017-07-19 05:24:12.204885747 +0000
+@@ -25,7 +25,7 @@
+             send_rollup_stats = False
+ 
+         cpu_stats = psutil.cpu_times_percent(percpu=False)
+-        num_of_metrics = self._format_results(cpu_stats.user + cpu_stats.nice,
++        num_of_metrics = self._format_results(cpu_stats.user + cpu_stats.nice + cpu_stats.guest,
+                                               cpu_stats.system + cpu_stats.irq + cpu_stats.softirq,
+                                               cpu_stats.iowait,
+                                               cpu_stats.idle,
